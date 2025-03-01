@@ -23,7 +23,7 @@ Enhanced Ctrl-R for shell history with n-dimensional search.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ctrlrs.git
+git clone https://github.com/vitrioil/ctrlrs.git
 cd ctrlrs
 
 # Run the install script
@@ -42,7 +42,7 @@ The install script will:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ctrlrs.git
+git clone https://github.com/vitrioil/ctrlrs.git
 cd ctrlrs
 
 # Build with Cargo
