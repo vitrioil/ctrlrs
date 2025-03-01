@@ -100,8 +100,10 @@ function enhanced_ctrl_r() {
     fi
     
     if [ -x "${ctrlrs_path}" ]; then
+        # Run ctrlrs and capture its output
         local result=$("${ctrlrs_path}")
         if [ -n "$result" ]; then
+            # Set the command line to the selected command
             READLINE_LINE="$result"
             READLINE_POINT=${#READLINE_LINE}
         fi
@@ -126,8 +128,10 @@ function enhanced_ctrl_r() {
     fi
     
     if [ -x "${ctrlrs_path}" ]; then
+        # Run ctrlrs and capture its output
         local result=$("${ctrlrs_path}")
         if [ -n "$result" ]; then
+            # Set the command line to the selected command
             BUFFER="$result"
             CURSOR=${#BUFFER}
         fi
@@ -154,8 +158,19 @@ function fish_user_key_bindings
     end
     
     if test -x "$ctrlrs_path"
+        # Define a function to handle Ctrl+R
+        function _enhanced_ctrl_r
+            # Run ctrlrs and capture its output
+            set -l result (eval $ctrlrs_path)
+            if test -n "$result"
+                # Set the command line to the selected command
+                commandline -r $result
+                commandline -f repaint
+            end
+        end
+        
         # Override Ctrl+R with our enhanced version
-        bind \cr "commandline ($ctrlrs_path)"
+        bind \cr _enhanced_ctrl_r
     else
         echo "ctrlrs not found. Please make sure it's installed."
     end

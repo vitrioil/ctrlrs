@@ -9,7 +9,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 pub type AppResult<T> = crate::Result<T>;
 
 /// Application state
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct App {
     /// Application configuration
     config: Config,

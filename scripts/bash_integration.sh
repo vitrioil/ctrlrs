@@ -10,8 +10,10 @@ function enhanced_ctrl_r() {
     fi
     
     if [ -x "${ctrlrs_path}" ]; then
+        # Run ctrlrs and capture its output
         local result=$("${ctrlrs_path}")
         if [ -n "$result" ]; then
+            # Set the command line to the selected command
             READLINE_LINE="$result"
             READLINE_POINT=${#READLINE_LINE}
         fi

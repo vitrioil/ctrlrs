@@ -21,7 +21,7 @@ pub struct HistoryEntry {
 }
 
 /// History manager
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HistoryManager {
     /// The history entries
     entries: Vec<HistoryEntry>,
@@ -71,7 +71,9 @@ impl HistoryManager {
         entries.sort_by(|a, b| {
             match (a.timestamp, b.timestamp) {
                 (Some(a_ts), Some(b_ts)) => b_ts.cmp(&a_ts), // Reverse order (newest first)
-                _ => std::cmp::Ordering::Equal,
+                (Some(_), None) => std::cmp::Ordering::Less, // Entries with timestamps come first
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => std::cmp::Ordering::Equal,
             }
         });
         

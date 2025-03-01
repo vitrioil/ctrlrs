@@ -5,7 +5,7 @@ use crate::shell::ShellType;
 use crate::Result;
 use std::path::PathBuf;
 
-/// Configuration for the ctrl-r application
+/// Configuration for the ctrlrs application
 #[derive(Debug, Clone)]
 pub struct Config {
     /// The type of shell

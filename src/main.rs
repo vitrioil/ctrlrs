@@ -3,7 +3,6 @@ use ctrlrs::app::App;
 use ctrlrs::config::Config;
 use ctrlrs::ui::ui::*;
 use ctrlrs::Result;
-use log::info;
 
 /// Enhanced Ctrl-R for shell history with n-dimensional search (up to 5 dimensions)
 /// 
@@ -28,35 +27,51 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    // Initialize logging
+    // Initialize logging only if debug flag is set
     if args.debug {
-        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+            .target(env_logger::Target::Stderr)
+            .init();
+        
+        log::info!("Starting ctrlrs");
     } else {
-        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+        // Disable logging
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("off"))
+            .target(env_logger::Target::Stderr)
+            .init();
     }
-
-    info!("Starting ctrlrs");
-
+    
     // Load configuration
-    let config = Config::new(args.shell, args.history_file)?;
-    info!("Configuration loaded: {:?}", config);
+    let config = Config::new(args.shell.clone(), args.history_file.clone())?;
+    
+    if args.debug {
+        log::info!("Configuration loaded: {:?}", config);
+    }
 
     // Setup terminal
     let mut terminal = setup_terminal()?;
 
     // Create app state
-    let app = App::new(config)?;
+    let mut app = App::new(config)?;
 
     // Run the application
-    let res = run_app(&mut terminal, app);
+    let res = run_app(&mut terminal, &mut app);
+
+    // Get the selected command
+    let selected_command = app.selected_command();
 
     // Restore terminal
     restore_terminal(&mut terminal)?;
 
     // Handle application result
     if let Err(err) = res {
-        println!("Error: {}", err);
+        eprintln!("Error: {}", err);
         return Err(err);
+    }
+
+    // Print the selected command to stdout
+    if let Some(cmd) = selected_command {
+        println!("{}", cmd);
     }
 
     Ok(())
