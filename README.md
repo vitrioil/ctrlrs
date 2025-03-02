@@ -13,6 +13,9 @@ Enhanced Ctrl-R for shell history with n-dimensional search.
 - **Cross-platform**: Works on Linux and macOS
 - **Lightweight**: Fast and efficient with minimal dependencies
 
+## Demo
+![Demo](demo/demo.gif)
+
 ## Installation
 
 ### Quick Install (Linux/macOS)
