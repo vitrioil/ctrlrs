@@ -10,19 +10,29 @@ function enhanced_ctrl_r() {
     fi
     
     if [ -x "${ctrlrs_path}" ]; then
-        # Run ctrlrs and capture its output
-        local result=$("${ctrlrs_path}")
+        # Clear the current line to avoid interference with TUI
+        zle -I
+        
+        # Run ctrlrs in a way that allows TUI to display properly
+        # but still captures the final selected command
+        local result
+        result=$("${ctrlrs_path}" </dev/tty >/dev/tty 2>/dev/null)
+        
+        # Update the command line with the selected command
         if [ -n "$result" ]; then
-            # Set the command line to the selected command
             BUFFER="$result"
             CURSOR=${#BUFFER}
         fi
+        
+        # Force the prompt to update
+        zle reset-prompt
     else
-        echo "ctrlrs not found. Please make sure it's installed."
+        echo "ctrlrs not found. Please make sure it's installed." >/dev/tty
         zle reset-prompt
     fi
 }
-# Override Ctrl+R with our enhanced version
+
+# Define the widget and bind it to Ctrl+R
 zle -N enhanced_ctrl_r
 bindkey '^R' enhanced_ctrl_r
 

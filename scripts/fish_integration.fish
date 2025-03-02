@@ -13,10 +13,11 @@ function fish_user_key_bindings
     if test -x "$ctrlrs_path"
         # Define a function to handle Ctrl+R
         function _enhanced_ctrl_r
-            # Run ctrlrs and capture its output
-            set -l result (eval $ctrlrs_path)
+            # Run ctrlrs directly with proper TTY handling
+            set -l result ($ctrlrs_path </dev/tty >/dev/tty 2>/dev/null)
+            
+            # Set the command line to the selected command
             if test -n "$result"
-                # Set the command line to the selected command
                 commandline -r $result
                 commandline -f repaint
             end
@@ -25,7 +26,7 @@ function fish_user_key_bindings
         # Override Ctrl+R with our enhanced version
         bind \cr _enhanced_ctrl_r
     else
-        echo "ctrlrs not found. Please make sure it's installed."
+        echo "ctrlrs not found. Please make sure it's installed." >/dev/tty
     end
 end
 

@@ -47,16 +47,26 @@ if [ -f "${SHELL_RC}" ]; then
         # Create a temporary file
         TEMP_FILE=$(mktemp)
         
-        # Remove the shell integration block based on shell type
+        # Remove the shell integration lines
+        # This will remove both the old style integration and the new source-based integration
         case "${SHELL_NAME}" in
             bash)
-                sed '/# ctrlrs shell integration/,/bind -x/d' "${SHELL_RC}" > "${TEMP_FILE}"
+                # Remove both old-style integration and new source-based integration
+                sed -e '/# ctrlrs shell integration/,/bind -x/d' \
+                    -e '/# Source ctrlrs shell integration/,+1d' \
+                    "${SHELL_RC}" > "${TEMP_FILE}"
                 ;;
             zsh)
-                sed '/# ctrlrs shell integration/,/bindkey/d' "${SHELL_RC}" > "${TEMP_FILE}"
+                # Remove both old-style integration and new source-based integration
+                sed -e '/# ctrlrs shell integration/,/bindkey/d' \
+                    -e '/# Source ctrlrs shell integration/,+1d' \
+                    "${SHELL_RC}" > "${TEMP_FILE}"
                 ;;
             fish)
-                sed '/# ctrlrs shell integration/,/end/d' "${SHELL_RC}" > "${TEMP_FILE}"
+                # Remove both old-style integration and new source-based integration
+                sed -e '/# ctrlrs shell integration/,/end/d' \
+                    -e '/# Source ctrlrs shell integration/,+1d' \
+                    "${SHELL_RC}" > "${TEMP_FILE}"
                 ;;
         esac
         

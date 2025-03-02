@@ -80,6 +80,9 @@ case "${SHELL_NAME}" in
         ;;
 esac
 
+# Get the directory where the install script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Check if shell integration is already added
 if grep -q "ctrlrs shell integration" "${SHELL_RC}" 2>/dev/null; then
     echo -e "${YELLOW}Shell integration already exists in ${SHELL_RC}${NC}"
@@ -88,94 +91,37 @@ else
     
     case "${SHELL_NAME}" in
         bash)
-            cat >> "${SHELL_RC}" << 'EOF'
-
-# ctrlrs shell integration
-function enhanced_ctrl_r() {
-    # Use full path to ensure the command is found
-    local ctrlrs_path="${HOME}/.local/bin/ctrlrs"
-    if [ ! -x "${ctrlrs_path}" ]; then
-        # Try to find ctrlrs in PATH as fallback
-        ctrlrs_path=$(which ctrlrs 2>/dev/null)
-    fi
-    
-    if [ -x "${ctrlrs_path}" ]; then
-        # Run ctrlrs and capture its output
-        local result=$("${ctrlrs_path}")
-        if [ -n "$result" ]; then
-            # Set the command line to the selected command
-            READLINE_LINE="$result"
-            READLINE_POINT=${#READLINE_LINE}
-        fi
-    else
-        echo "ctrlrs not found. Please make sure it's installed."
-    fi
-}
-# Override Ctrl+R with our enhanced version
-bind -x '"\C-r": enhanced_ctrl_r'
-EOF
+            # Check if bash integration script exists
+            if [ -f "${SCRIPT_DIR}/bash_integration.sh" ]; then
+                # Add source command to shell RC file
+                echo -e "\n# Source ctrlrs shell integration" >> "${SHELL_RC}"
+                echo "source ${SCRIPT_DIR}/bash_integration.sh" >> "${SHELL_RC}"
+            else
+                echo -e "${RED}Bash integration script not found at ${SCRIPT_DIR}/bash_integration.sh${NC}"
+                exit 1
+            fi
             ;;
         zsh)
-            cat >> "${SHELL_RC}" << 'EOF'
-
-# ctrlrs shell integration
-function enhanced_ctrl_r() {
-    # Use full path to ensure the command is found
-    local ctrlrs_path="${HOME}/.local/bin/ctrlrs"
-    if [ ! -x "${ctrlrs_path}" ]; then
-        # Try to find ctrlrs in PATH as fallback
-        ctrlrs_path=$(which ctrlrs 2>/dev/null)
-    fi
-    
-    if [ -x "${ctrlrs_path}" ]; then
-        # Run ctrlrs and capture its output
-        local result=$("${ctrlrs_path}")
-        if [ -n "$result" ]; then
-            # Set the command line to the selected command
-            BUFFER="$result"
-            CURSOR=${#BUFFER}
-        fi
-    else
-        echo "ctrlrs not found. Please make sure it's installed."
-        zle reset-prompt
-    fi
-}
-# Override Ctrl+R with our enhanced version
-zle -N enhanced_ctrl_r
-bindkey '^R' enhanced_ctrl_r
-EOF
+            # Check if zsh integration script exists
+            if [ -f "${SCRIPT_DIR}/zsh_integration.sh" ]; then
+                # Add source command to shell RC file
+                echo -e "\n# Source ctrlrs shell integration" >> "${SHELL_RC}"
+                echo "source ${SCRIPT_DIR}/zsh_integration.sh" >> "${SHELL_RC}"
+            else
+                echo -e "${RED}Zsh integration script not found at ${SCRIPT_DIR}/zsh_integration.sh${NC}"
+                exit 1
+            fi
             ;;
         fish)
-            cat >> "${SHELL_RC}" << 'EOF'
-
-# ctrlrs shell integration
-function fish_user_key_bindings
-    # Use full path to ensure the command is found
-    set ctrlrs_path "$HOME/.local/bin/ctrlrs"
-    if not test -x "$ctrlrs_path"
-        # Try to find ctrlrs in PATH as fallback
-        set ctrlrs_path (which ctrlrs 2>/dev/null)
-    end
-    
-    if test -x "$ctrlrs_path"
-        # Define a function to handle Ctrl+R
-        function _enhanced_ctrl_r
-            # Run ctrlrs and capture its output
-            set -l result (eval $ctrlrs_path)
-            if test -n "$result"
-                # Set the command line to the selected command
-                commandline -r $result
-                commandline -f repaint
-            end
-        end
-        
-        # Override Ctrl+R with our enhanced version
-        bind \cr _enhanced_ctrl_r
-    else
-        echo "ctrlrs not found. Please make sure it's installed."
-    end
-end
-EOF
+            # Check if fish integration script exists
+            if [ -f "${SCRIPT_DIR}/fish_integration.fish" ]; then
+                # Add source command to shell RC file
+                echo -e "\n# Source ctrlrs shell integration" >> "${SHELL_RC}"
+                echo "source ${SCRIPT_DIR}/fish_integration.fish" >> "${SHELL_RC}"
+            else
+                echo -e "${RED}Fish integration script not found at ${SCRIPT_DIR}/fish_integration.fish${NC}"
+                exit 1
+            fi
             ;;
     esac
     
