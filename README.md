@@ -59,14 +59,40 @@ chmod +x ~/.local/bin/ctrlrs
 Add to your `~/.bashrc`:
 
 ```bash
-# ctrlrs shell integration
+# ctrlrs shell integration for Bash
 function enhanced_ctrl_r() {
-    local result=$(ctrlrs)
-    if [ -n "$result" ]; then
-        READLINE_LINE="$result"
-        READLINE_POINT=${#READLINE_LINE}
+    # Use full path to ensure the command is found
+    local ctrlrs_path="${HOME}/.local/bin/ctrlrs"
+    if [ ! -x "${ctrlrs_path}" ]; then
+        # Try to find ctrlrs in PATH as fallback
+        ctrlrs_path=$(which ctrlrs 2>/dev/null)
+    fi
+    
+    if [ -x "${ctrlrs_path}" ]; then
+        # Create a temporary file to store the selected command
+        local temp_file
+        temp_file=$(mktemp)
+        
+        # Run ctrlrs with the output file option
+        "${ctrlrs_path}" -o "$temp_file" </dev/tty >/dev/tty 2>/dev/null
+        
+        # Read the selected command from the temp file if it exists and has content
+        if [ -f "$temp_file" ] && [ -s "$temp_file" ]; then
+            local result
+            result=$(cat "$temp_file")
+            
+            # Update the command line with the selected command
+            READLINE_LINE="$result"
+            READLINE_POINT=${#READLINE_LINE}
+        fi
+        
+        # Delete the temp file
+        rm -f "$temp_file"
+    else
+        echo "ctrlrs not found. Please make sure it's installed." >/dev/tty
     fi
 }
+
 # Override Ctrl+R with our enhanced version
 bind -x '"\C-r": enhanced_ctrl_r'
 ```
@@ -76,15 +102,47 @@ bind -x '"\C-r": enhanced_ctrl_r'
 Add to your `~/.zshrc`:
 
 ```zsh
-# ctrlrs shell integration
+# ctrlrs shell integration for Zsh
 function enhanced_ctrl_r() {
-    local result=$(ctrlrs)
-    if [ -n "$result" ]; then
-        BUFFER="$result"
-        CURSOR=${#BUFFER}
+    local ctrlrs_path="${HOME}/.local/bin/ctrlrs"
+    if [ ! -x "${ctrlrs_path}" ]; then
+        ctrlrs_path=$(which ctrlrs 2>/dev/null)
+    fi
+
+    if [ -x "${ctrlrs_path}" ]; then
+        # Ensure proper terminal behavior
+        zle -I
+        zle reset-prompt
+
+        # Create a temporary file to store the selected command
+        local temp_file
+        temp_file=$(mktemp)
+        
+        # Run ctrlrs with the output file option
+        "$ctrlrs_path" -o "$temp_file" </dev/tty >/dev/tty 2>/dev/null
+        
+        # Read the selected command from the temp file if it exists and has content
+        if [ -f "$temp_file" ] && [ -s "$temp_file" ]; then
+            local result
+            result=$(cat "$temp_file")
+            
+            # Set the command buffer if a result was selected
+            BUFFER="$result"
+            CURSOR=${#BUFFER}
+        fi
+        
+        # Delete the temp file
+        rm -f "$temp_file"
+
+        # Refresh prompt
+        zle reset-prompt
+    else
+        echo "ctrlrs not found. Please make sure it's installed." >/dev/tty
+        zle reset-prompt
     fi
 }
-# Override Ctrl+R with our enhanced version
+
+# Bind the function to Ctrl+R
 zle -N enhanced_ctrl_r
 bindkey '^R' enhanced_ctrl_r
 ```
@@ -94,9 +152,42 @@ bindkey '^R' enhanced_ctrl_r
 Add to your `~/.config/fish/config.fish`:
 
 ```fish
-# ctrlrs shell integration
+# ctrlrs shell integration for Fish
 function fish_user_key_bindings
-    bind \cr 'commandline (ctrlrs)'
+    # Use full path to ensure the command is found
+    set ctrlrs_path "$HOME/.local/bin/ctrlrs"
+    if not test -x "$ctrlrs_path"
+        # Try to find ctrlrs in PATH as fallback
+        set ctrlrs_path (which ctrlrs 2>/dev/null)
+    end
+    
+    if test -x "$ctrlrs_path"
+        # Define a function to handle Ctrl+R
+        function _enhanced_ctrl_r
+            # Create a temporary file to store the selected command
+            set -l temp_file (mktemp)
+            
+            # Run ctrlrs with the output file option
+            $ctrlrs_path -o $temp_file </dev/tty >/dev/tty 2>/dev/null
+            
+            # Read the selected command from the temp file if it exists and has content
+            if test -f "$temp_file" -a -s "$temp_file"
+                set -l result (cat "$temp_file")
+                
+                # Set the command line to the selected command
+                commandline -r $result
+                commandline -f repaint
+            end
+            
+            # Delete the temp file
+            rm -f "$temp_file"
+        end
+        
+        # Override Ctrl+R with our enhanced version
+        bind \cr _enhanced_ctrl_r
+    else
+        echo "ctrlrs not found. Please make sure it's installed." >/dev/tty
+    end
 end
 ```
 
@@ -120,7 +211,8 @@ USAGE:
 OPTIONS:
     -d, --debug                 Enable debug logging
     -s, --shell <SHELL>         Specify shell type (auto-detected if not specified)
-    -h, --history-file <PATH>   Specify history file path (auto-detected if not specified)
+    -f, --history-file <PATH>   Specify history file path (auto-detected if not specified)
+    -o, --output-file <PATH>    Specify output file path for the selected command
     -h, --help                  Print help information
     -V, --version               Print version information
 ```
