@@ -3,6 +3,9 @@ use ctrlrs::app::App;
 use ctrlrs::config::Config;
 use ctrlrs::ui::ui::*;
 use ctrlrs::Result;
+use std::fs::File;
+use std::io::Write;
+use tempfile::NamedTempFile;
 
 /// Enhanced Ctrl-R for shell history with n-dimensional search (up to 5 dimensions)
 /// 
@@ -22,6 +25,10 @@ struct Args {
     /// Specify history file path (auto-detected if not specified)
     #[clap(short = 'f', long)]
     history_file: Option<String>,
+    
+    /// Specify output file path for the selected command
+    #[clap(short = 'o', long)]
+    output_file: Option<String>,
 }
 
 fn main() -> Result<()> {
@@ -69,9 +76,26 @@ fn main() -> Result<()> {
         return Err(err);
     }
 
-    // Print the selected command to stdout
+    // Write the selected command to the specified output file or a temporary file
     if let Some(cmd) = selected_command {
-        println!("{}", cmd);
+        if let Some(output_path) = &args.output_file {
+            // Write to the specified output file
+            match std::fs::File::create(output_path) {
+                Ok(mut file) => {
+                    if let Err(err) = writeln!(file, "{}", cmd) {
+                        eprintln!("Error writing to output file: {}", err);
+                        return Err(ctrlrs::error::Error::Other(format!("Failed to write to output file: {}", err)));
+                    }
+                },
+                Err(err) => {
+                    eprintln!("Error creating output file: {}", err);
+                    return Err(ctrlrs::error::Error::Other(format!("Failed to create output file: {}", err)));
+                }
+            }
+        } else {
+            // If no output file is specified, print to stdout (fallback for backward compatibility)
+            println!("{}", cmd);
+        }
     }
 
     Ok(())

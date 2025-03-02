@@ -13,14 +13,23 @@ function fish_user_key_bindings
     if test -x "$ctrlrs_path"
         # Define a function to handle Ctrl+R
         function _enhanced_ctrl_r
-            # Run ctrlrs directly with proper TTY handling
-            set -l result ($ctrlrs_path </dev/tty >/dev/tty 2>/dev/null)
+            # Create a temporary file to store the selected command
+            set -l temp_file (mktemp)
             
-            # Set the command line to the selected command
-            if test -n "$result"
+            # Run ctrlrs with the output file option
+            $ctrlrs_path -o $temp_file </dev/tty >/dev/tty 2>/dev/null
+            
+            # Read the selected command from the temp file if it exists and has content
+            if test -f "$temp_file" -a -s "$temp_file"
+                set -l result (cat "$temp_file")
+                
+                # Set the command line to the selected command
                 commandline -r $result
                 commandline -f repaint
             end
+            
+            # Delete the temp file
+            rm -f "$temp_file"
         end
         
         # Override Ctrl+R with our enhanced version

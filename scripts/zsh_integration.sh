@@ -1,30 +1,36 @@
 #!/bin/zsh
-
-# ctrlrs shell integration for Zsh
 function enhanced_ctrl_r() {
-    # Use full path to ensure the command is found
     local ctrlrs_path="${HOME}/.local/bin/ctrlrs"
     if [ ! -x "${ctrlrs_path}" ]; then
-        # Try to find ctrlrs in PATH as fallback
         ctrlrs_path=$(which ctrlrs 2>/dev/null)
     fi
-    
+
     if [ -x "${ctrlrs_path}" ]; then
-        # Clear the current line to avoid interference with TUI
+        # Ensure proper terminal behavior
         zle -I
+        zle reset-prompt
+
+        # Create a temporary file to store the selected command
+        local temp_file
+        temp_file=$(mktemp)
         
-        # Run ctrlrs in a way that allows TUI to display properly
-        # but still captures the final selected command
-        local result
-        result=$("${ctrlrs_path}" </dev/tty >/dev/tty 2>/dev/null)
+        # Run ctrlrs with the output file option
+        "$ctrlrs_path" -o "$temp_file" </dev/tty >/dev/tty 2>/dev/null
         
-        # Update the command line with the selected command
-        if [ -n "$result" ]; then
+        # Read the selected command from the temp file if it exists and has content
+        if [ -f "$temp_file" ] && [ -s "$temp_file" ]; then
+            local result
+            result=$(cat "$temp_file")
+            
+            # Set the command buffer if a result was selected
             BUFFER="$result"
             CURSOR=${#BUFFER}
         fi
         
-        # Force the prompt to update
+        # Delete the temp file
+        rm -f "$temp_file"
+
+        # Refresh prompt
         zle reset-prompt
     else
         echo "ctrlrs not found. Please make sure it's installed." >/dev/tty
@@ -32,9 +38,6 @@ function enhanced_ctrl_r() {
     fi
 }
 
-# Define the widget and bind it to Ctrl+R
+# Bind the function to Ctrl+R
 zle -N enhanced_ctrl_r
 bindkey '^R' enhanced_ctrl_r
-
-# To install, add this to your ~/.zshrc:
-# source /path/to/zsh_integration.sh
