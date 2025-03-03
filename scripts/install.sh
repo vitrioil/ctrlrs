@@ -108,7 +108,7 @@ else
             if [ "${OS}" = "macos" ] && [ -f "${SCRIPT_DIR}/mac/zsh_integration.sh" ]; then
                 INTEGRATION_SCRIPT="${SCRIPT_DIR}/mac/zsh_integration.sh"
                 echo -e "${BLUE}Using macOS-specific Zsh integration${NC}"
-                echo -e "${YELLOW}Note: On macOS with ZSH, use the 'r' command instead of Ctrl+R${NC}"
+                echo -e "${YELLOW}Note: On macOS with ZSH, use the 'c' command instead of Ctrl+R${NC}"
             elif [ -f "${SCRIPT_DIR}/zsh_integration.sh" ]; then
                 INTEGRATION_SCRIPT="${SCRIPT_DIR}/zsh_integration.sh"
             else
@@ -143,7 +143,7 @@ echo -e "${GREEN}Installation complete!${NC}"
 
 # Show appropriate usage message based on shell and OS
 if [ "${SHELL_NAME}" = "zsh" ] && [ "${OS}" = "macos" ]; then
-    echo -e "${BLUE}Usage: Type 'r' and press Enter in your terminal to use the enhanced history search${NC}"
+    echo -e "${BLUE}Usage: Type 'c' and press Enter in your terminal to use the enhanced history search${NC}"
 else
     echo -e "${BLUE}Usage: Press Ctrl+R in your terminal to use the enhanced history search${NC}"
 fi

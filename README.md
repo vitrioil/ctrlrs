@@ -163,7 +163,7 @@ function _find_ctrlrs() {
 }
 
 # Function to be used as a regular command
-function r() {
+function c() {
     local ctrlrs_path=$(_find_ctrlrs)
     
     if [ ! -x "${ctrlrs_path}" ]; then
@@ -192,7 +192,7 @@ function r() {
 }
 ```
 
-This macOS-specific integration uses the `r` command instead of `Ctrl+R` binding, as there are issues with terminal I/O handling on macOS that prevent the Ctrl+R binding from working reliably. Simply type `r` and press Enter to launch the search interface.
+This macOS-specific integration uses the `c` command instead of `Ctrl+R` binding, as there are issues with terminal I/O handling on macOS that prevent the Ctrl+R binding from working reliably. Simply type `c` and press Enter to launch the search interface.
 
 ##### Fish
 
@@ -251,9 +251,9 @@ end
 
 ### For macOS users with ZSH
 
-Due to terminal I/O handling issues on macOS with ZSH, the `r` command is used instead of `Ctrl+R`:
+Due to terminal I/O handling issues on macOS with ZSH, the `c` command is used instead of `Ctrl+R`:
 
-1. Type `r` and press `Enter` in your terminal to activate the enhanced history search
+1. Type `c` and press `Enter` in your terminal to activate the enhanced history search
 2. Type your first search term to filter commands
 3. Navigate through results with `Up/Down` arrow keys
 4. Press `Ctrl+R` to enter a second search term for nested filtering

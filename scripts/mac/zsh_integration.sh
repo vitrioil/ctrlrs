@@ -11,12 +11,12 @@ function _find_ctrlrs() {
 }
 
 # Note: Ctrl+R binding is not reliable on macOS with ZSH due to terminal I/O issues
-# We recommend using the 'r' command instead (defined below)
+# We recommend using the 'c' command instead (defined below)
 # This function is kept here for reference but is not bound to Ctrl+R by default
 function enhanced_ctrl_r() {
     # This function is intentionally left empty as it's not reliable on macOS
-    # Use the 'r' command instead
-    zle -M "Please use the 'r' command instead of Ctrl+R on macOS"
+    # Use the 'c' command instead
+    zle -M "Please use the 'c' command instead of Ctrl+R on macOS"
     zle reset-prompt
 }
 
@@ -24,8 +24,8 @@ function enhanced_ctrl_r() {
 # zle -N enhanced_ctrl_r
 # bindkey '^R' enhanced_ctrl_r
 
-# Also provide the 'r' command as an alternative
-function r() {
+# Also provide the 'c' command as an alternative
+function c() {
     local ctrlrs_path=$(_find_ctrlrs)
     
     if [ ! -x "${ctrlrs_path}" ]; then
