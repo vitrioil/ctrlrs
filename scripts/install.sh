@@ -89,45 +89,61 @@ if grep -q "ctrlrs shell integration" "${SHELL_RC}" 2>/dev/null; then
 else
     echo -e "${BLUE}Adding shell integration to ${SHELL_RC}${NC}"
     
+    # Determine which integration script to use based on shell and OS
+    INTEGRATION_SCRIPT=""
+    
     case "${SHELL_NAME}" in
         bash)
-            # Check if bash integration script exists
-            if [ -f "${SCRIPT_DIR}/bash_integration.sh" ]; then
-                # Add source command to shell RC file
-                echo -e "\n# Source ctrlrs shell integration" >> "${SHELL_RC}"
-                echo "source ${SCRIPT_DIR}/bash_integration.sh" >> "${SHELL_RC}"
+            if [ "${OS}" = "macos" ] && [ -f "${SCRIPT_DIR}/mac/bash_integration.sh" ]; then
+                INTEGRATION_SCRIPT="${SCRIPT_DIR}/mac/bash_integration.sh"
+                echo -e "${BLUE}Using macOS-specific Bash integration${NC}"
+            elif [ -f "${SCRIPT_DIR}/bash_integration.sh" ]; then
+                INTEGRATION_SCRIPT="${SCRIPT_DIR}/bash_integration.sh"
             else
-                echo -e "${RED}Bash integration script not found at ${SCRIPT_DIR}/bash_integration.sh${NC}"
+                echo -e "${RED}Bash integration script not found${NC}"
                 exit 1
             fi
             ;;
         zsh)
-            # Check if zsh integration script exists
-            if [ -f "${SCRIPT_DIR}/zsh_integration.sh" ]; then
-                # Add source command to shell RC file
-                echo -e "\n# Source ctrlrs shell integration" >> "${SHELL_RC}"
-                echo "source ${SCRIPT_DIR}/zsh_integration.sh" >> "${SHELL_RC}"
+            if [ "${OS}" = "macos" ] && [ -f "${SCRIPT_DIR}/mac/zsh_integration.sh" ]; then
+                INTEGRATION_SCRIPT="${SCRIPT_DIR}/mac/zsh_integration.sh"
+                echo -e "${BLUE}Using macOS-specific Zsh integration${NC}"
+                echo -e "${YELLOW}Note: On macOS with ZSH, use the 'r' command instead of Ctrl+R${NC}"
+            elif [ -f "${SCRIPT_DIR}/zsh_integration.sh" ]; then
+                INTEGRATION_SCRIPT="${SCRIPT_DIR}/zsh_integration.sh"
             else
-                echo -e "${RED}Zsh integration script not found at ${SCRIPT_DIR}/zsh_integration.sh${NC}"
+                echo -e "${RED}Zsh integration script not found${NC}"
                 exit 1
             fi
             ;;
         fish)
-            # Check if fish integration script exists
-            if [ -f "${SCRIPT_DIR}/fish_integration.fish" ]; then
-                # Add source command to shell RC file
-                echo -e "\n# Source ctrlrs shell integration" >> "${SHELL_RC}"
-                echo "source ${SCRIPT_DIR}/fish_integration.fish" >> "${SHELL_RC}"
+            if [ "${OS}" = "macos" ] && [ -f "${SCRIPT_DIR}/mac/fish_integration.fish" ]; then
+                INTEGRATION_SCRIPT="${SCRIPT_DIR}/mac/fish_integration.fish"
+                echo -e "${BLUE}Using macOS-specific Fish integration${NC}"
+            elif [ -f "${SCRIPT_DIR}/fish_integration.fish" ]; then
+                INTEGRATION_SCRIPT="${SCRIPT_DIR}/fish_integration.fish"
             else
-                echo -e "${RED}Fish integration script not found at ${SCRIPT_DIR}/fish_integration.fish${NC}"
+                echo -e "${RED}Fish integration script not found${NC}"
                 exit 1
             fi
             ;;
     esac
+    
+    # Add source command to shell RC file
+    if [ -n "${INTEGRATION_SCRIPT}" ]; then
+        echo -e "\n# Source ctrlrs shell integration" >> "${SHELL_RC}"
+        echo "source ${INTEGRATION_SCRIPT}" >> "${SHELL_RC}"
+    fi
     
     echo -e "${GREEN}Shell integration added to ${SHELL_RC}${NC}"
     echo -e "${YELLOW}Please restart your shell or run 'source ${SHELL_RC}' to apply changes${NC}"
 fi
 
 echo -e "${GREEN}Installation complete!${NC}"
-echo -e "${BLUE}Usage: Press Ctrl+R in your terminal to use the enhanced history search${NC}"
+
+# Show appropriate usage message based on shell and OS
+if [ "${SHELL_NAME}" = "zsh" ] && [ "${OS}" = "macos" ]; then
+    echo -e "${BLUE}Usage: Type 'r' and press Enter in your terminal to use the enhanced history search${NC}"
+else
+    echo -e "${BLUE}Usage: Press Ctrl+R in your terminal to use the enhanced history search${NC}"
+fi
