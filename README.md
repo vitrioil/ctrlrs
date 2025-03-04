@@ -162,37 +162,48 @@ function _find_ctrlrs() {
     echo "$ctrlrs_path"
 }
 
-# Function to be used as a regular command
-function c() {
+function enhanced_ctrl_r() {
     local ctrlrs_path=$(_find_ctrlrs)
     
     if [ ! -x "${ctrlrs_path}" ]; then
-        echo "ctrlrs not found. Please make sure it's installed."
+        echo "ctrlrs not found. Please make sure it's installed." >/dev/tty
+        zle reset-prompt
         return 1
     fi
+    
+    # Ensure proper terminal behavior
+    zle -I
+    zle reset-prompt
     
     # Create a temporary file to store the selected command
     local temp_file
     temp_file=$(mktemp "/tmp/ctrlrs.XXXXXX") || return
     
-    # Run ctrlrs with the output file option
-    "${ctrlrs_path}" -o "$temp_file"
+    # Run ctrlrs with the output file option using TTY redirection
+    # This is the fix for macOS ZSH Ctrl+R issues
+    <$TTY "${ctrlrs_path}" -o "$temp_file"
     
     # Read the selected command from the temp file if it exists and has content
     if [ -f "$temp_file" ] && [ -s "$temp_file" ]; then
         local result
         result=$(cat "$temp_file")
         
-        # Print the command to the terminal
-        print -z "$result"
+        # Set the command buffer if a result was selected
+        BUFFER="$result"
+        CURSOR=${#BUFFER}
     fi
     
     # Delete the temp file
     rm -f "$temp_file"
+    
+    # Refresh prompt
+    zle reset-prompt
 }
-```
 
-This macOS-specific integration uses the `c` command instead of `Ctrl+R` binding, as there are issues with terminal I/O handling on macOS that prevent the Ctrl+R binding from working reliably. Simply type `c` and press Enter to launch the search interface.
+# Bind the function to Ctrl+R
+zle -N enhanced_ctrl_r
+bindkey '^R' enhanced_ctrl_r
+```
 
 ##### Fish
 
@@ -240,23 +251,10 @@ end
 
 ## Usage
 
-### For most users (Linux and macOS with Bash/Fish)
-
 1. Press `Ctrl+R` in your terminal to activate the enhanced history search
 2. Type your first search term to filter commands
 3. Navigate through results with `Up/Down` arrow keys
 4. Press `Ctrl+R` again to enter a second search term for nested filtering
-5. Continue pressing `Ctrl+R` to add more filters (up to 5 dimensions)
-6. Press `Enter` to select a command or `Esc` to cancel
-
-### For macOS users with ZSH
-
-Due to terminal I/O handling issues on macOS with ZSH, the `c` command is used instead of `Ctrl+R`:
-
-1. Type `c` and press `Enter` in your terminal to activate the enhanced history search
-2. Type your first search term to filter commands
-3. Navigate through results with `Up/Down` arrow keys
-4. Press `Ctrl+R` to enter a second search term for nested filtering
 5. Continue pressing `Ctrl+R` to add more filters (up to 5 dimensions)
 6. Press `Enter` to select a command or `Esc` to cancel
 
