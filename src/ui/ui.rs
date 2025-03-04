@@ -15,6 +15,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use std::io;
+use textwrap;
 
 /// Setup the terminal
 pub fn setup_terminal() -> AppResult<Terminal<CrosstermBackend<io::Stdout>>> {
@@ -126,25 +127,44 @@ pub fn ui(f: &mut Frame, app: &App) {
 
     // Results (positioned after all filter dimensions)
     let results_idx = app.max_dimensions();
-    let results = app
+    
+    // Calculate the available width for wrapping
+    let available_width = chunks[results_idx].width.saturating_sub(4) as usize;
+    
+    // Create a list of items for each entry
+    let results_items: Vec<ListItem> = app
         .filtered_entries()
         .iter()
         .enumerate()
         .map(|(i, entry)| {
-            let content = format!("{}", entry.command);
+            // Wrap the command text to fit within the available width
+            // Use textwrap with options to better handle the specific requirements
+            let mut options = textwrap::Options::new(available_width);
+            options.break_words = true;  // Allow breaking words if they're too long
+            options.word_separator = textwrap::WordSeparator::AsciiSpace;  // Use ASCII space as word separator
+            
+            let wrapped_text = textwrap::fill(&entry.command, options);
+            
+            // Apply style based on selection
             let style = if i == app.selected_index() {
                 Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
             };
-            ListItem::new(content).style(style)
+            
+            // Create a ListItem with the wrapped command text and style
+            ListItem::new(wrapped_text).style(style)
         })
-        .collect::<Vec<_>>();
+        .collect();
 
-    let results_count = format!("{} results", results.len());
-    let results_list = List::new(results)
+    // Create the results list with automatic text wrapping
+    let results_count = format!("{} results", results_items.len());
+    let results_list = List::new(results_items)
         .block(Block::default().borders(Borders::ALL).title(results_count));
-    f.render_widget(results_list, chunks[results_idx]);
+    
+    // Render the list with wrapping enabled
+    let area = chunks[results_idx];
+    f.render_widget(results_list, area);
 
     // Status line (positioned after results)
     let status_idx = app.max_dimensions() + 1;

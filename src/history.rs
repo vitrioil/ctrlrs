@@ -77,7 +77,18 @@ impl HistoryManager {
             }
         });
         
-        Ok(entries)
+        // Deduplicate entries, keeping only the first occurrence of each command
+        // (which will be the most recent due to the sorting above)
+        let mut unique_entries = Vec::new();
+        let mut seen_commands = std::collections::HashSet::new();
+        
+        for entry in entries {
+            if seen_commands.insert(entry.command.clone()) {
+                unique_entries.push(entry);
+            }
+        }
+        
+        Ok(unique_entries)
     }
 
     /// Parse a history line
