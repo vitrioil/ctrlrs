@@ -1,3 +1,5 @@
+
+
 //! History file parsing and filtering
 
 use crate::config::Config;
@@ -46,17 +48,52 @@ impl HistoryManager {
             Error::HistoryRead(format!("Failed to open history file: {}", e))
         })?;
         
-        let reader = BufReader::new(file);
         let format = shell_type.history_format();
-        
         let mut entries = Vec::new();
+        
+        // Process line by line for all formats
+        let reader = BufReader::new(file);
+        let mut current_command = String::new();
+        let mut current_timestamp: Option<u64> = None;
+        let timestamp_regex = Regex::new(r"^: (\d+):\d+;(.*)$").unwrap();
         
         // Read the file line by line, skipping lines with invalid UTF-8
         for line_result in reader.lines() {
             match line_result {
                 Ok(line) => {
-                    if let Some(entry) = Self::parse_history_line(&line, format) {
-                        entries.push(entry);
+                    if format == HistoryFormat::ZshExtended {
+                        // Check if this is a new command (starts with timestamp)
+                        if let Some(captures) = timestamp_regex.captures(&line) {
+                            // If we have a previous command, add it as an entry
+                            if !current_command.is_empty() {
+                                if let Some(entry) = Self::create_entry(&current_command, current_timestamp, format) {
+                                    entries.push(entry);
+                                }
+                                current_command.clear();
+                            }
+                            
+                            // Extract timestamp and command
+                            if let Some(ts_str) = captures.get(1) {
+                                if let Ok(ts) = ts_str.as_str().parse::<u64>() {
+                                    current_timestamp = Some(ts);
+                                }
+                            }
+                            
+                            if let Some(cmd) = captures.get(2) {
+                                current_command = cmd.as_str().to_string();
+                            }
+                        } else {
+                            // This is a continuation of the previous command
+                            if !current_command.is_empty() {
+                                current_command.push('\n');
+                                current_command.push_str(&line);
+                            }
+                        }
+                    } else {
+                        // For other formats, each line is a separate command
+                        if let Some(entry) = Self::parse_history_line(&line, format) {
+                            entries.push(entry);
+                        }
                     }
                 },
                 Err(e) => {
@@ -64,6 +101,13 @@ impl HistoryManager {
                     log::warn!("Skipping line with invalid UTF-8: {}", e);
                     continue;
                 }
+            }
+        }
+        
+        // Add the last command if there is one
+        if format == HistoryFormat::ZshExtended && !current_command.is_empty() {
+            if let Some(entry) = Self::create_entry(&current_command, current_timestamp, format) {
+                entries.push(entry);
             }
         }
         
@@ -91,6 +135,24 @@ impl HistoryManager {
         Ok(unique_entries)
     }
 
+    /// Create a history entry from a command and timestamp
+    fn create_entry(command: &str, timestamp: Option<u64>, _format: HistoryFormat) -> Option<HistoryEntry> {
+        if command.trim().is_empty() {
+            return None;
+        }
+        
+        // Convert multi-line commands to single line
+        let mut processed_command = command.replace('\n', " ");
+        // Handle both single and double backslashes (zsh stores backslashes as double backslashes)
+        processed_command = processed_command.replace(" \\\\", " ").replace(" \\", " ");
+        
+        Some(HistoryEntry {
+            command: processed_command,
+            timestamp,
+            original_line: command.to_string(),
+        })
+    }
+
     /// Parse a history line
     fn parse_history_line(line: &str, format: HistoryFormat) -> Option<HistoryEntry> {
         if line.trim().is_empty() {
@@ -100,8 +162,14 @@ impl HistoryManager {
         match format {
             HistoryFormat::Plain => {
                 // Simple format: just the command
+                // Convert multi-line commands to single line
+                // First, join all lines by replacing newlines with spaces
+                let mut command = line.replace('\n', " ");
+                // Then, remove any trailing backslashes that were used for line continuation
+                // Handle both single and double backslashes
+                command = command.replace(" \\\\", " ").replace(" \\", " ");
                 Some(HistoryEntry {
-                    command: line.to_string(),
+                    command,
                     timestamp: None,
                     original_line: line.to_string(),
                 })
@@ -111,7 +179,9 @@ impl HistoryManager {
                 let re = Regex::new(r"^: (\d+):\d+;(.*)$").ok()?;
                 if let Some(captures) = re.captures(line) {
                     let timestamp = captures.get(1)?.as_str().parse::<u64>().ok()?;
-                    let command = captures.get(2)?.as_str().to_string();
+                    let mut command = captures.get(2)?.as_str().replace('\n', " ");
+                    // Handle both single and double backslashes (zsh stores backslashes as double backslashes)
+                    command = command.replace(" \\\\", " ").replace(" \\", " ");
                     
                     Some(HistoryEntry {
                         command,
@@ -120,8 +190,11 @@ impl HistoryManager {
                     })
                 } else {
                     // Fall back to treating it as a plain command
+                    // Convert multi-line commands to single line
+                    let mut command = line.replace('\n', " ");
+                    command = command.replace(" \\\\", " ").replace(" \\", " ");
                     Some(HistoryEntry {
-                        command: line.to_string(),
+                        command,
                         timestamp: None,
                         original_line: line.to_string(),
                     })
@@ -133,7 +206,8 @@ impl HistoryManager {
                 if let Some(cmd_start) = line.find("cmd:") {
                     let cmd_part = &line[cmd_start + 4..];
                     if let Some(cmd_end) = cmd_part.find("when:") {
-                        let command = cmd_part[..cmd_end].trim().trim_matches('"').to_string();
+                        let mut command = cmd_part[..cmd_end].trim().trim_matches('"').replace('\n', " ");
+                        command = command.replace(" \\\\", " ").replace(" \\", " ");
                         
                         // Try to extract timestamp
                         let timestamp = if let Some(when_start) = line.find("when:") {
@@ -178,7 +252,7 @@ impl HistoryManager {
                 continue; // Skip empty filters
             }
             
-            let re = Regex::new(&regex::escape(filter))
+            let re = Regex::new(&format!("(?i){}", regex::escape(filter)))
                 .map_err(|e| Error::Other(format!("Invalid regex: {}", e)))?;
             
             filtered = filtered.into_iter()
