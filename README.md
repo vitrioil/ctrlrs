@@ -18,6 +18,10 @@ Enhanced Ctrl-R for shell history with n-dimensional search.
 
 ## Installation
 
+### Prerequisites
+
+- **Rust and Cargo**: Required for building from source. If not installed, you can get it from [https://rustup.rs/](https://rustup.rs/)
+
 ### Quick Install (Linux/macOS)
 
 ```bash

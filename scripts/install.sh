@@ -29,6 +29,14 @@ esac
 
 echo -e "${BLUE}Detected architecture: ${ARCH}${NC}"
 
+# Check if Cargo is installed
+if ! command -v cargo &> /dev/null; then
+    echo -e "${RED}Error: Rust and Cargo are required for installation${NC}"
+    echo -e "${YELLOW}Please install Rust from https://rustup.rs/ and try again${NC}"
+    exit 1
+fi
+echo -e "${BLUE}Rust/Cargo detected${NC}"
+
 # Installation directory
 INSTALL_DIR="${HOME}/.local/bin"
 mkdir -p "${INSTALL_DIR}"
